@@ -1,0 +1,5 @@
+logLevel: info
+rtspAddress: :8554
+webrtcAddress: :8889
+hlsAddress: :8888
+apiAddress: :9997

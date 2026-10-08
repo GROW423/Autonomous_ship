@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/boat.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>无人船远程控制系统</title>
+    <!-- 高德地图JS API -->
+    <script type="text/javascript">
+      window._AMapSecurityConfig = {
+        securityJsCode: '%VITE_AMAP_SECURITY_CODE%',
+      }
+    </script>
+    <script
+      type="text/javascript"
+      src="https://webapi.amap.com/maps?v=2.0&key=%VITE_AMAP_KEY%&plugin=AMap.Scale,AMap.ToolBar,AMap.PolyEditor,AMap.MouseTool"
+    ></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

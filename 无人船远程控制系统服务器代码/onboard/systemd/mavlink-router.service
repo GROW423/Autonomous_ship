@@ -1,0 +1,16 @@
+[Unit]
+Description=MAVLink Router (Pixhawk <-> Cloud)
+After=network.target serial-getty@ttyS1.service
+Wants=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/mavlink-routerd -c /opt/usv/config/mavlink-router.conf
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mavlink-router
+
+[Install]
+WantedBy=multi-user.target

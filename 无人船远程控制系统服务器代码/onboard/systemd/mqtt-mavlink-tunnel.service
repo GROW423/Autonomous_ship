@@ -1,0 +1,20 @@
+[Unit]
+Description=USV MAVLink serial tunnel over MQTT
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/usv-mqtt.env
+Environment=USV_SERIAL=/dev/ttyS1
+Environment=USV_BAUD=57600
+ExecStart=/opt/usv/venv/bin/python /opt/usv/services/mqtt_mavlink_tunnel.py --role boat
+Restart=always
+RestartSec=5
+User=root
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mqtt-mavlink-tunnel
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,47 @@
+# ============================================================
+# 传感器监控配置
+# 部署路径: /opt/usv/config/sensor_config.yaml
+# ============================================================
+
+# MAVLink连接 (从本地mavlink-router获取飞控数据, 同时上报自定义数据)
+mavlink:
+  connection: "udp:127.0.0.1:14550"
+  source_system: 1
+  source_component: 1  # MAV_COMP_ID_PATHPLANNER
+
+# 超声波料位传感器 (JSN-SR04T, 安装在料斗顶部向下测距)
+ultrasonic:
+  # GPIO引脚 (OrangePi Zero2W BCM编号)
+  trig_pin: 20    # GPIO20, Physical pin 38
+  echo_pin: 21    # GPIO21, Physical pin 40
+  # 料斗参数: 根据实际料斗尺寸调整
+  # 满料时传感器到料面的距离 (cm)
+  hopper_full_cm: 5.0
+  # 空料时传感器到料底的距离 (cm)
+  hopper_empty_cm: 50.0
+  # 测距超时 (ms)
+  timeout_ms: 50
+
+# 4G模块信号监控
+cellular:
+  # AT指令端口 (移远EC200S通常是 /dev/ttyUSB2)
+  at_port: "/dev/ttyUSB2"
+  baud: 115200
+  enabled: true
+
+# 温度监控 (用CPU温度作为箱内参考)
+temperature:
+  # OrangePi CPU温度路径
+  cpu_temp_path: "/sys/class/thermal/thermal_zone0/temp"
+  enabled: true
+
+# 上报配置
+report:
+  # 数据上报间隔 (秒)
+  interval_sec: 2.0
+
+# 日志
+logging:
+  level: "INFO"
+  file: "/opt/usv/logs/sensor.log"
+  max_days: 7

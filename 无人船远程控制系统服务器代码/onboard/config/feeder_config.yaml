@@ -1,0 +1,57 @@
+# ============================================================
+# 投料控制系统配置
+# 部署路径: /opt/usv/config/feeder_config.yaml
+# ============================================================
+
+# MAVLink连接 (从本地mavlink-router获取飞控数据)
+mavlink:
+  # mavlink-router的本地UDP端点
+  connection: "udp:127.0.0.1:14550"
+  # 本船系统ID (与mavlink-router.conf的SystemId一致)
+  source_system: 1
+  source_component: 1  # MAV_COMP_ID_PATHPLANNER
+
+# GPIO引脚配置 (OrangePi Zero2W 26pin GPIO, BCM编号)
+# 接线: 香橙派GPIO -> BTS7960电机驱动模块
+gpio:
+  # PWM输出引脚 (控制投料电机转速)
+  pwm_pin: 12        # GPIO12, Physical pin 32
+  # 电机使能引脚 (高电平运转, 低电平停止)
+  enable_pin: 16     # GPIO16, Physical pin 36
+  # 方向引脚 (投料电机固定正转, 可悬空或接高)
+  direction_pin: 18  # GPIO18, Physical pin 40
+
+# 投料参数
+feeder:
+  # 基础PWM占空比 (0.0 - 1.0), 对应目标船速下的投料量
+  base_duty: 0.5
+  # 最小PWM占空比 (电机启动阈值, 低于此值电机不转)
+  min_duty: 0.2
+  # 最大PWM占空比 (全速投料)
+  max_duty: 0.9
+  # 目标航行速度 (m/s), 用于计算速度补偿系数
+  target_speed: 1.5
+  # PWM频率 (Hz), BTS7960支持高频, 设20kHz减少噪音
+  pwm_freq: 20000
+  # 电机启动预热时间 (秒), 启动时先以min_duty运转避免堵转
+  warmup_time: 1.0
+
+# 自动投料逻辑
+auto_feed:
+  # 在这些飞行模式下自动开启投料
+  # ArduPilot Rover模式: 4=AUTO, 3=STEERING, 11=GUIDED
+  auto_modes: [4, 11]
+  # 在这些模式下强制关闭投料
+  # 0=MANUAL, 1=ACRO, 2=LEARNING, 5=RTL, 6=HOLD
+  stop_modes: [0, 1, 5, 6]
+  # 最低速度阈值 (m/s), 低于此速度不投料(避免原地堆积)
+  min_speed: 0.2
+  # 航点序号>=此值时开始投料(跳过第一个航点, 即出发段不撒)
+  start_waypoint: 1
+
+# 日志
+logging:
+  level: "INFO"
+  file: "/opt/usv/logs/feeder.log"
+  # 日志最大保留天数
+  max_days: 7

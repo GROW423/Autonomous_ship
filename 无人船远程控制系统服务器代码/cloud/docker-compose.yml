@@ -1,0 +1,139 @@
+# ============================================================
+# 无人船云平台 Docker Compose 编排
+# 包含: PostgreSQL, Redis, MediaMTX, MAVLink Gateway, API Server
+# 启动: docker compose up -d
+# 查看: docker compose logs -f
+# ============================================================
+
+services:
+  # ============================================================
+  # MQTT Broker - TLS only; start explicitly with --profile mqtt
+  # Provision mqtt/certs and mqtt/config/passwords before enabling.
+  # ============================================================
+  mqtt-broker:
+    image: eclipse-mosquitto:2
+    container_name: usv-mqtt-broker
+    restart: unless-stopped
+    profiles: ["mqtt"]
+    ports:
+      - "${MQTT_BIND_IP:-0.0.0.0}:${MQTT_TLS_PORT:-8883}:8883"
+    volumes:
+      - ./mqtt/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mqtt/config/acl:/mosquitto/config/acl:ro
+      - ./mqtt/config/passwords:/mosquitto/config/passwords:ro
+      - ./mqtt/certs:/mosquitto/certs:ro
+      - mqtt_data:/mosquitto/data
+
+  # ============================================================
+  # PostgreSQL - 主数据库 (用户/船/任务/历史遥测)
+  # ============================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: usv-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-usv}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-usv_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-usv}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-usv}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================
+  # Redis - 实时状态缓存 + Pub/Sub (MAVLink网关 <-> API <-> WebSocket)
+  # ============================================================
+  redis:
+    image: redis:7-alpine
+    container_name: usv-redis
+    restart: always
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================
+  # MediaMTX - 视频SFU (接收船端RTSP推流, 转WebRTC/HLS给前端)
+  # ============================================================
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: usv-mediamtx
+    restart: always
+    ports:
+      - "${MEDIAMTX_RTSP_PORT:-8554}:8554"    # RTSP (船端推流)
+      - "${MEDIAMTX_WEBRTC_PORT:-8889}:8889"   # WebRTC (前端拉流)
+      - "${MEDIAMTX_HLS_PORT:-8888}:8888"      # HLS (备选)
+      - "${MEDIAMTX_API_PORT:-9997}:9997"      # API
+    volumes:
+      - ./mediamtx/mediamtx.yml:/mediamtx.yml:ro
+    environment:
+      - MTX_WEBRTCADDITIONALHOSTS=${MEDIAMTX_PUBLIC_IP:-localhost}
+
+  # ============================================================
+  # MAVLink Gateway - 船端通信网关
+  # 监听TCP 5760, 接受每艘船的mavlink-router连接, 解析MAVLink消息
+  # ============================================================
+  mavlink-gateway:
+    build:
+      context: ./mavlink-gateway
+      dockerfile: Dockerfile
+    container_name: usv-mavlink-gateway
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      - MAVLINK_TCP_PORT=5760
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-usv}:${POSTGRES_PASSWORD:-usv_secret}@postgres:5432/${POSTGRES_DB:-usv}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "${MAVLINK_TCP_PORT:-5760}:5760"
+    volumes:
+      - mavlink_logs:/app/logs
+
+  # ============================================================
+  # API Server - FastAPI后端 (REST API + WebSocket)
+  # ============================================================
+  api-server:
+    build:
+      context: ./api-server
+      dockerfile: Dockerfile
+    container_name: usv-api-server
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      mavlink-gateway:
+        condition: service_started
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-usv}:${POSTGRES_PASSWORD:-usv_secret}@postgres:5432/${POSTGRES_DB:-usv}
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-change_this_to_a_random_secret_key}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-1440}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - MEDIAMTX_WEBRTC_URL=${MEDIAMTX_WEBRTC_URL:-http://localhost:8889}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "${API_PORT:-8000}:8000"
+
+volumes:
+  mqtt_data:
+  postgres_data:
+  redis_data:
+  mavlink_logs:

@@ -1,0 +1,18 @@
+[Unit]
+Description=USV Sensor Monitor (Feed Level / 4G Signal / Temperature)
+After=mavlink-router.service
+Requires=mavlink-router.service
+
+[Service]
+Type=simple
+ExecStart=/opt/usv/venv/bin/python /opt/usv/services/sensor_monitor.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sensor-monitor
+# GPIO和串口访问需要root
+User=root
+
+[Install]
+WantedBy=multi-user.target

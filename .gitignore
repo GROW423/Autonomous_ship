@@ -1,0 +1,64 @@
+# ===== 环境变量与密钥（绝不提交） =====
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ===== Node / 前端 =====
+node_modules/
+dist/
+build/
+.nuxt/
+.output/
+.next/
+
+# ===== IDE / 编辑器 =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ===== 操作系统 =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== 日志 =====
+*.log
+logs/
+
+# ===== 数据库 / Docker 卷 =====
+postgres_data/
+redis_data/
+*.db
+*.sqlite
+*.sqlite3
+
+# ===== 移远驱动包内超大文件（70MB，官方驱动包可重新下载） =====
+Quectel_Linux_USB_Serial_Option_Driver_V1.1/20260319/License.txt
+
+# ===== quectel-CM 编译产物 =====
+quectel-CM/*.o
+quectel-CM/quectel-CM
+quectel-CM/*.a
+quectel-CM/*.so
+
+# ===== 保留空目录占位 =====
+!**/.gitkeep

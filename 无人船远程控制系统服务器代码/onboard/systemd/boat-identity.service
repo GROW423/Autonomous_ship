@@ -1,0 +1,18 @@
+[Unit]
+Description=USV Boat Identity Service (ICCID report via MAVLink)
+After=network.target mavlink-router.service
+Wants=mavlink-router.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/usv
+ExecStart=/opt/usv/venv/bin/python /opt/usv/services/boat_identity.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=usv-boat-identity
+
+[Install]
+WantedBy=multi-user.target

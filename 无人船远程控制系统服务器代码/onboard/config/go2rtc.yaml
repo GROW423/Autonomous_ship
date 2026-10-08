@@ -1,0 +1,56 @@
+# ============================================================
+# go2rtc 配置文件
+# 功能: 采集USB摄像头, 提供本地WebRTC/RTSP预览
+# 部署路径: /opt/usv/config/go2rtc.yaml
+#
+# 公网推流由独立的 ffmpeg-push 服务完成
+# (从本地go2rtc拉RTSP, 推送到云端MediaMTX)
+# ============================================================
+
+# 日志级别: debug, info, warn, error
+log:
+  level: info
+
+# API和Web界面端口
+api:
+  listen: ":1984"
+
+# RTSP服务端口 (本地预览, ffmpeg-push从这里拉流)
+rtsp:
+  listen: ":8554"
+
+# WebRTC配置
+webrtc:
+  # WebRTC监听端口
+  listen: ":8555"
+  # ICE服务器 (用于NAT穿透, 公网访问时需要)
+  # 默认用谷歌STUN, 国内可能不通, 建议自建或用国内STUN
+  ice_servers:
+    - stun:stun.l.google.com:19302
+  # 本地网络时用候选IP
+  # local_networks: [192.168.1.0/24]
+
+# ============================================================
+# 视频流定义
+# ============================================================
+streams:
+  # 主摄像头 - USB摄像头 (V4L2)
+  camera1:
+    # V4L2采集, 指定分辨率和帧率
+    # 格式优先用MJPEG (压缩格式, USB带宽占用低), 其次YUYV
+    - v4l2:///dev/video0?resolution=1280x720&fps=25&video_codec=mjpeg
+
+  # 如果上面的分辨率/帧率摄像头不支持, 用这个保守配置:
+  # camera1:
+  #   - v4l2:///dev/video0?resolution=640x480&fps=20
+
+# ============================================================
+# 说明:
+# 1. 确认摄像头设备: ls /dev/video*
+#    通常USB摄像头是 /dev/video0
+# 2. 查看摄像头支持的格式: v4l2-ctl --device=/dev/video0 --list-formats-ext
+# 3. 本地预览(WebRTC): 浏览器打开 http://<香橙派IP>:1984/stream.html?src=camera1
+# 4. 本地预览(RTSP): ffplay rtsp://<香橙派IP>:8554/camera1
+# 5. 公网推流: 由 ffmpeg-push.service 从 rtsp://127.0.0.1:8554/camera1 拉流
+#    推送到云端MediaMTX, 详见 systemd/ffmpeg-push.service
+# ============================================================

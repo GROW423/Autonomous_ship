@@ -1,0 +1,16 @@
+[Unit]
+Description=FFmpeg Video Push to Cloud MediaMTX
+After=go2rtc.service
+Requires=go2rtc.service
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /opt/usv/scripts/ffmpeg_push.sh
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ffmpeg-push
+
+[Install]
+WantedBy=multi-user.target
